@@ -24,6 +24,7 @@ namespace 剪纸堆
     public partial class Settings : Window
     {
         MainWindow winMain;
+
         public Settings(MainWindow _winMain)
         {
             winMain = _winMain;
@@ -34,30 +35,45 @@ namespace 剪纸堆
             {
                 cbxStartup.IsChecked = true;
             }
-            if(cfa.AppSettings.Settings["Hide"].Value=="true")
+            if (cfa.AppSettings.Settings["Hide"].Value == "true")
             {
                 cbxHide.IsChecked = true;
             }
             scbMax.Value = int.Parse(cfa.AppSettings.Settings["MaxObject"].Value);
-            
+
         }
         Configuration cfa;
 
-        private void scbOpacity_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        /// <summary>
+        /// 透明度滚动条改变
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ScbOpacityValueChangedEventHandler(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             tbkOpacity.Text = "透明度：" + Math.Floor(scbOpacity.Value).ToString() + "%";
 
         }
 
-        private void scbMax_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        /// <summary>
+        /// 最多项目滚动条改变
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ScbMaxValueChangedEventHandler(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             tbkMax.Text = "最多：" + Math.Floor(scbMax.Value).ToString() + "条";
         }
 
-        private void btnOKClickEventHandler(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// 单击保存按钮
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void BtnOKClickEventHandler(object sender, RoutedEventArgs e)
         {
             winMain.Opacity = Math.Floor(scbOpacity.Value) / 100;
-            
+
             cfa.AppSettings.Settings["Opacity"].Value = (Math.Floor(scbOpacity.Value) / 100).ToString();
             cfa.AppSettings.Settings["MaxObject"].Value = Math.Floor(scbMax.Value).ToString();
             cfa.AppSettings.Settings["Hide"].Value = cbxHide.IsChecked == true ? "true" : "false";
@@ -71,12 +87,22 @@ namespace 剪纸堆
             Process.Start(startpath + "/剪纸堆.exe");
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// 单击退出按钮
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void BtnExitClickEventHandler(object sender, RoutedEventArgs e)
         {
             Close();
         }
 
-        private void RadioButton_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// 单击开机自启按钮
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ChkStartupClickEventHandler(object sender, RoutedEventArgs e)
         {
             if (((CheckBox)sender).IsChecked == true)
             {
@@ -114,5 +140,6 @@ namespace 剪纸堆
 
             }
         }
+
     }
 }

@@ -59,10 +59,10 @@ namespace 剪纸堆
                 this.Y = y;
             }
         }
-            [DllImport("user32.dll", CharSet = CharSet.Auto)]
-            public static extern bool GetCursorPos(out POINT pt);
-        
-        }
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        public static extern bool GetCursorPos(out POINT pt);
+
+    }
 
     /// <summary>
     /// MainWindow.xaml 的交互逻辑
@@ -75,6 +75,7 @@ namespace 剪纸堆
 
         }
 
+        #region 剪贴板监控
         /// <summary>
         /// Next clipboard viewer window 
         /// </summary>
@@ -107,7 +108,15 @@ namespace 剪纸堆
 
             isViewing = false;
         }
-
+        /// <summary>
+        /// 剪贴板监控
+        /// </summary>
+        /// <param name="hwnd"></param>
+        /// <param name="msg"></param>
+        /// <param name="wParam"></param>
+        /// <param name="lParam"></param>
+        /// <param name="handled"></param>
+        /// <returns></returns>
         private IntPtr WinProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
             switch (msg)
@@ -127,7 +136,7 @@ namespace 剪纸堆
 
                 case Win32.WM_DRAWCLIPBOARD:
                     // clipboard content changed
-                    if(openLastNow)
+                    if (openLastNow)
                     {
                         openLastNow = false;
                     }
@@ -142,9 +151,29 @@ namespace 剪纸堆
 
             return IntPtr.Zero;
         }
+        #endregion
 
+
+        #region 字段声明
+        List<Border> buttons = new List<Border>();
+        public Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+        public System.Windows.Forms.NotifyIcon notifyIcon;
+        XmlDocument xml = new XmlDocument();
+        XmlElement root;
+        bool openLastNow = true;
+        DispatcherTimer waitTimer = new DispatcherTimer();
+        DispatcherTimer opacityTimer = new DispatcherTimer();
+        DoubleAnimation da = new DoubleAnimation();
+        Storyboard sb = new Storyboard();
+        int needAddButton = 0;
+        #endregion
+
+        #region 按钮
+        /// <summary>
+        /// 创建新的按钮，这个是自动取剪贴板并且存档
+        /// </summary>
         private void CreatNew()
-        { 
+        {
             if (Clipboard.ContainsText())
             {
                 if (needAddButton > 0)
@@ -165,19 +194,30 @@ namespace 剪纸堆
                     }
                 }
                 while (strValue == null);
-               // root.FirstChild.Value = (int.Parse(root.FirstChild.Value) + 1).ToString();
-                root.SetAttribute("Count", (int.Parse(root.GetAttribute("Count") )+ 1).ToString());
-                XmlElement xe = xml.CreateElement("String_"+root.GetAttribute("Count"));
+                // root.FirstChild.Value = (int.Parse(root.FirstChild.Value) + 1).ToString();
+                root.SetAttribute("Count", (int.Parse(root.GetAttribute("Count")) + 1).ToString());
+                XmlElement xe = xml.CreateElement("String_" + root.GetAttribute("Count"));
                 xe.SetAttribute("Time", DateTime.Now.ToString() + "." + DateTime.Now.Millisecond);
                 xe.SetAttribute("Value", strValue);
                 root.AppendChild(xe);
                 xml.Save("OldClipBoard.xml");
-                addNewButton(strValue);
+
+
+                AddNewButton(strValue);
+
+                if (spnl.Children.Count > 2 * int.Parse(cfa.AppSettings.Settings["MaxObject"].Value))
+                {
+                    spnl.Children.RemoveAt(spnl.Children.Count - 1);
+                    spnl.Children.RemoveAt(spnl.Children.Count - 1);
+                }
             }
         }
 
-      
-        private void addNewButton(string strValue)
+        /// <summary>
+        /// 增加新的按钮
+        /// </summary>
+        /// <param name="strValue"></param>
+        private void AddNewButton(string strValue)
         {
             Button tempButton = new Button()
             {
@@ -221,21 +261,28 @@ namespace 剪纸堆
             //spnl.Children.Add(tempGrid);
             //spnl.Children.Add(new TextBlock());
         }
-        int needAddButton = 0;
+
+        /// <summary>
+        /// 按钮的事件，即复制
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void TempButtonClickEventHandler(object sender, RoutedEventArgs e)
         {
             needAddButton = 2;
             Clipboard.SetText((sender as Button).Content as string);
 
         }
+        #endregion
 
-        List<Border> buttons = new List<Border>();
-        public Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-        public System.Windows.Forms.NotifyIcon notifyIcon;
-        XmlDocument xml = new XmlDocument();
-        XmlElement root;
-        bool openLastNow = true;
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+
+        #region 窗口和动画
+        /// <summary>
+        /// 窗口加载
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void WinMainLoadedEventHandler(object sender, RoutedEventArgs e)
         {
             IconAndNotify();
 
@@ -257,19 +304,19 @@ namespace 剪纸堆
             int i = 1;
             if (int.Parse(root.GetAttribute("Count")) > int.Parse(cfa.AppSettings.Settings["MaxObject"].Value))
             {
-                i = int.Parse(root.GetAttribute("Count")) - int.Parse(cfa.AppSettings.Settings["MaxObject"].Value);
+                i = int.Parse(root.GetAttribute("Count")) - int.Parse(cfa.AppSettings.Settings["MaxObject"].Value) + 1;
             }
 
             for (; i <= int.Parse(root.GetAttribute("Count")); i++)
             {
-                addNewButton(root["String_" + i.ToString()].GetAttribute("Value"));
+                AddNewButton(root["String_" + i.ToString()].GetAttribute("Value"));
             }
             //foreach (XmlElement i in root)
             //{
             //    addNewButton(i.GetAttribute("Value"));
             //}
             waitTimer.Interval = new TimeSpan(10000 * 1000);
-            waitTimer.Tick += new EventHandler(waitTimer_Tick);
+            waitTimer.Tick += new EventHandler(AnimationWatingTimerTickEventHandler);
             InitalizeAnimation(this, HeightProperty);
 
             InitCBViewer();
@@ -277,6 +324,9 @@ namespace 剪纸堆
 
         }
 
+        /// <summary>
+        /// 窗口图标和托盘图标
+        /// </summary>
         private void IconAndNotify()
         {
             string tempFileName = System.IO.Path.GetTempFileName();
@@ -312,30 +362,43 @@ namespace 剪纸堆
                 //Point p = Mouse.GetPosition(e3.Source as FrameworkElement);
                 Window settingPage = new Settings(this)
                 {
-                    Left = p.X ,
-                    Top = p.Y 
+                    Left = p.X,
+                    Top = p.Y
                 };
                 settingPage.Show();
             };
 
-            System.Windows.Forms.MenuItem[] childen = new System.Windows.Forms.MenuItem[] {miSettings, miExit };
+            System.Windows.Forms.MenuItem[] childen = new System.Windows.Forms.MenuItem[] { miSettings, miExit };
             notifyIcon.ContextMenu = new System.Windows.Forms.ContextMenu(childen);
             this.Icon = new BitmapImage(new Uri(tempFileName));
         }
 
-        private void Grid_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        /// <summary>
+        /// 按住标题时可以拖动
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void HeadingGridMouseLeftButtonDownEventHandler(object sender, MouseButtonEventArgs e)
         {
             base.DragMove();
         }
 
-        private void Window_MouseEnter(object sender, MouseEventArgs e)
+        /// <summary>
+        /// 鼠标进入窗口执行动画
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void WinMainMouseEnterEventHandler(object sender, MouseEventArgs e)
         {
             WindowAnimation(1);
             //Debug.WriteLine("enter");
         }
-        DoubleAnimation da = new DoubleAnimation();
-        Storyboard sb = new Storyboard();
-       // Storyboard sb2 = new Storyboard();
+        
+        /// <summary>
+        /// 窗口动画的初始化部分
+        /// </summary>
+        /// <param name="animationObject"></param>
+        /// <param name="property"></param>
         private void InitalizeAnimation(object animationObject, DependencyProperty property)
         {
             string tempName = "tempName";
@@ -344,35 +407,65 @@ namespace 剪纸堆
             da.Duration = new Duration(TimeSpan.FromMilliseconds(500));
             Storyboard.SetTargetName(da, tempName);
             Storyboard.SetTargetProperty(da, new PropertyPath(property));
-            
+
             sb.Children.Add(da);
         }
+
+        /// <summary>
+        /// 窗口动画的实行部分
+        /// </summary>
+        /// <param name="type"></param>
         private void WindowAnimation(int type)
         {
 
-            //Debug.WriteLine(spnl.ActualHeight);
-            switch (type)
+            if (spnl.ActualHeight + 64 > SystemParameters.WorkArea.Height)
             {
-                case 1:
+                switch (type)
+                {
+                    case 1:
 
-                    da.To = spnl.ActualHeight+64 > SystemParameters.WorkArea.Height -Top? SystemParameters.WorkArea.Height - Top : spnl.ActualHeight+64;
-                    break;
-                case 2:
+                        da.To = SystemParameters.WorkArea.Height - Top;
+                        break;
+                    case 2:
 
-                    da.To = 300;
-                    break;
+                        da.To = 300;
+                        break;
+                }
+
+                sb.Begin(this);
+                opacityTimer.Interval = new TimeSpan(10000 * 10);
+                opacityTimer.Tick += new EventHandler(ScrollBarOpacityChangeTimerTickEventHandler);
+                opacityTimer.Start();
             }
+            else
+            {
 
-            sb.Begin(this);
-            opacityTimer.Interval = new TimeSpan(10000 * 10);
-            opacityTimer.Tick += new EventHandler(opacityTimer1);
-            opacityTimer.Start();
+                switch (type)
+                {
+                    case 1:
+
+                        da.To = spnl.ActualHeight + 64;
+                        break;
+                    case 2:
+
+                        da.To = 300;
+                        break;
+                }
+
+                sb.Begin(this);
+
+            }
         }
 
-        private void opacityTimer1(object sender, EventArgs e)
+        /// <summary>
+        /// 滚动条透明度改变的动画
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ScrollBarOpacityChangeTimerTickEventHandler(object sender, EventArgs e)
         {
             //Debug.WriteLine(da.To == 300);
-            if(da.To==300)
+            if (da.To == 300)
             {
                 if ((double)Resources["Opacity"] >= 0)
                 {
@@ -385,7 +478,7 @@ namespace 剪纸堆
             }
             else
             {
-                if ((double)Resources["Opacity"] <=1)
+                if ((double)Resources["Opacity"] <= 1)
                 {
                     Resources["Opacity"] = (double)Resources["Opacity"] + 0.04;
                 }
@@ -396,50 +489,62 @@ namespace 剪纸堆
             }
         }
 
-        DispatcherTimer waitTimer = new DispatcherTimer();
-        DispatcherTimer opacityTimer = new DispatcherTimer();
-        private void mainWindow_MouseLeave(object sender, MouseEventArgs e)
+        /// <summary>
+        /// 鼠标移出窗口准备缩回
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void WinMainMouseLeaveEventHandler(object sender, MouseEventArgs e)
         {
             try
             {
-                
+
                 waitTimer.IsEnabled = false;
-                waitTimer.Start();  
+                waitTimer.Start();
             }
             catch
             {
 
             }
             // Debug.WriteLine("leave");
-      
+
             cfa.AppSettings.Settings["LeftToScreenRight"].Value = Left.ToString();
             cfa.AppSettings.Settings["TopToScreenTop"].Value = Top.ToString();
-            
+
             cfa.Save();
             //Debug.WriteLine("Changed");
         }
 
-        private void waitTimer_Tick(object sender, EventArgs e)
+        /// <summary>
+        /// 缩回动画的等待
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void AnimationWatingTimerTickEventHandler(object sender, EventArgs e)
         {
-           if(Mouse.GetPosition(this as FrameworkElement).X<0 && Mouse.GetPosition(this as FrameworkElement).Y<0)
-            WindowAnimation(2);
+            if (Mouse.GetPosition(this as FrameworkElement).X < 0 && Mouse.GetPosition(this as FrameworkElement).Y < 0)
+                WindowAnimation(2);
             waitTimer.IsEnabled = false;
             return;
         }
 
-     
-
-        private void TextBlock_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
+        /// <summary>
+        /// 右键标题来呼出设置界面
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void TxtHeadingPreviewMouseRightButtonUpEventHandler(object sender, MouseButtonEventArgs e)
         {
             Point p = Mouse.GetPosition(e.Source as FrameworkElement);
             Window settingPage = new Settings(this)
             {
-                Left = p.X+this.Left,
-            Top = p.Y+this.Top,
+                Left = p.X + this.Left,
+                Top = p.Y + this.Top,
             };
             this.Topmost = false;
             settingPage.ShowDialog();
             this.Topmost = true;
         }
+        #endregion
     }
 }

@@ -13,9 +13,9 @@
 AllowsTransparency="True"
         Background="{x:Null}" 
          Topmost="True"
-        Loaded="Window_Loaded"
-        MouseEnter="Window_MouseEnter"
-        MouseLeave="mainWindow_MouseLeave"
+        Loaded="WinMainLoadedEventHandler"
+        MouseEnter="WinMainMouseEnterEventHandler"
+        MouseLeave="WinMainMouseLeaveEventHandler"
         ShowInTaskbar="False"
         >
     <Window.Resources>
@@ -105,7 +105,7 @@ AllowsTransparency="True"
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <Grid MouseLeftButtonDown="Grid_MouseLeftButtonDown" VerticalAlignment="Top">
+                <Grid MouseLeftButtonDown="HeadingGridMouseLeftButtonDownEventHandler" VerticalAlignment="Top">
                     <Border CornerRadius="3"  HorizontalAlignment="Center" VerticalAlignment="Center" BorderBrush="{DynamicResource headerColor}" BorderThickness="4">
                         <Border.Effect>
                             <DropShadowEffect RenderingBias="Quality" Color="#CC555500" Opacity="0.5"/>
@@ -113,7 +113,7 @@ AllowsTransparency="True"
                         <TextBlock Name="header" Text="剪纸堆" Foreground="Transparent" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="5,1"/>
                     </Border>
                     <Grid Background="{DynamicResource headerColor}" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <TextBlock Text="剪纸堆" Foreground="Black" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="6,2" FontFamily="Microsoft YaHei"  PreviewMouseRightButtonUp="TextBlock_PreviewMouseRightButtonUp"/>
+                        <TextBlock Text="剪纸堆" Foreground="Black" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="6,2" FontFamily="Microsoft YaHei"  PreviewMouseRightButtonUp="TxtHeadingPreviewMouseRightButtonUpEventHandler"/>
                     </Grid>
                 </Grid>
                 <StackPanel Name="spnl" Orientation="Vertical" ScrollViewer.VerticalScrollBarVisibility="Auto" Grid.Row="2" Margin="0,0,8,0"/>

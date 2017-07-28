@@ -96,13 +96,13 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <TextBlock x:Name="tbkOpacity" HorizontalAlignment="Center" VerticalAlignment="Center">透明度：50%</TextBlock>
-        <ScrollBar x:Name="scbOpacity" Grid.Column="2" Value="50" Orientation="Horizontal" Width="80" SmallChange="1" LargeChange="10" Maximum="100" ValueChanged="scbOpacity_ValueChanged"/>
+        <ScrollBar x:Name="scbOpacity" Grid.Column="2" Value="50" Orientation="Horizontal" Width="80" SmallChange="1" LargeChange="10" Maximum="100" ValueChanged="ScbOpacityValueChangedEventHandler"/>
         <TextBlock x:Name="tbkMax" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="2">最多：100条</TextBlock>
-        <ScrollBar x:Name="scbMax" Grid.Column="2" Value="100" Orientation="Horizontal" Width="80" Grid.Row="2" LargeChange="10" SmallChange="1" Minimum="1" Maximum="100" ValueChanged="scbMax_ValueChanged"/>
+        <ScrollBar x:Name="scbMax" Grid.Column="2" Value="100" Orientation="Horizontal" Width="80" Grid.Row="2" LargeChange="10" SmallChange="1" Minimum="1" Maximum="100" ValueChanged="ScbMaxValueChangedEventHandler"/>
 
-        <CheckBox x:Name="cbxStartup" Grid.Row="4" Content="开机自启" Click="RadioButton_Click"/>
+        <CheckBox x:Name="cbxStartup" Grid.Row="4" Content="开机自启" Click="ChkStartupClickEventHandler"/>
         <CheckBox x:Name="cbxHide" Grid.Row="4" Grid.Column="2" Content="隐藏自身"/>
-        <Button Content="保存" Grid.Row="6" Click="btnOKClickEventHandler"/>
-        <Button Content="取消" Grid.Row="6" Grid.Column="2" Click="Button_Click"/>
+        <Button Content="保存" Grid.Row="6" Click="BtnOKClickEventHandler"/>
+        <Button Content="取消" Grid.Row="6" Grid.Column="2" Click="BtnExitClickEventHandler"/>
     </Grid>
 </Window>
