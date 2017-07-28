@@ -105,14 +105,14 @@ AllowsTransparency="True"
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <Grid MouseLeftButtonDown="HeadingGridMouseLeftButtonDownEventHandler" VerticalAlignment="Top">
+                <Grid MouseLeftButtonDown="HeadingGridMouseLeftButtonDownEventHandler" VerticalAlignment="Top" Margin="0,0,8,0">
                     <Border CornerRadius="3"  HorizontalAlignment="Center" VerticalAlignment="Center" BorderBrush="{DynamicResource headerColor}" BorderThickness="4">
                         <Border.Effect>
                             <DropShadowEffect RenderingBias="Quality" Color="#CC555500" Opacity="0.5"/>
                         </Border.Effect>
                         <TextBlock Name="header" Text="剪纸堆" Foreground="Transparent" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="5,1"/>
                     </Border>
-                    <Grid Background="{DynamicResource headerColor}" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Grid Background="{DynamicResource headerColor}" HorizontalAlignment="Center" VerticalAlignment="Center" >
                         <TextBlock Text="剪纸堆" Foreground="Black" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="6,2" FontFamily="Microsoft YaHei"  PreviewMouseRightButtonUp="TxtHeadingPreviewMouseRightButtonUpEventHandler"/>
                     </Grid>
                 </Grid>
