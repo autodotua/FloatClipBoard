@@ -1,4 +1,5 @@
-﻿using System;
+﻿using IWshRuntimeLibrary;
+using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
@@ -29,7 +30,14 @@ namespace 剪纸堆
             InitializeComponent();
             cfa = winMain.cfa;
             scbOpacity.Value = Math.Floor(winMain.Opacity * 100);
-         
+            if (System.IO.File.Exists(Environment.GetFolderPath(Environment.SpecialFolder.Startup) + "\\FloatClipBoard.lnk"))
+            {
+                cbxStartup.IsChecked = true;
+            }
+            if(cfa.AppSettings.Settings["Hide"].Value=="true")
+            {
+                cbxHide.IsChecked = true;
+            }
             scbMax.Value = int.Parse(cfa.AppSettings.Settings["MaxObject"].Value);
             
         }
@@ -52,6 +60,9 @@ namespace 剪纸堆
             
             cfa.AppSettings.Settings["Opacity"].Value = (Math.Floor(scbOpacity.Value) / 100).ToString();
             cfa.AppSettings.Settings["MaxObject"].Value = Math.Floor(scbMax.Value).ToString();
+            cfa.AppSettings.Settings["Hide"].Value = cbxHide.IsChecked == true ? "true" : "false";
+            cfa.AppSettings.Settings["Startup"].Value = cbxStartup.IsChecked == true ? "true" : "false";
+
             cfa.Save();
             //Close();
             Application.Current.Shutdown();
@@ -63,6 +74,45 @@ namespace 剪纸堆
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             Close();
+        }
+
+        private void RadioButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (((CheckBox)sender).IsChecked == true)
+            {
+
+                string Path = Environment.GetFolderPath(Environment.SpecialFolder.Startup);// System.Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop) + "\\新建文件夹 (3)"; //"%USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup";
+
+                IWshRuntimeLibrary.WshShell shell = new IWshRuntimeLibrary.WshShell();
+                IWshShortcut sc = (IWshShortcut)shell.CreateShortcut(Path + "\\FloatClipBoard.lnk");
+                sc.TargetPath = Process.GetCurrentProcess().MainModule.FileName;
+                sc.WorkingDirectory = Environment.CurrentDirectory;
+                sc.Save();
+                //Debug.WriteLine(Path);
+                if (System.IO.File.Exists(Path + "\\FloatClipBoard.lnk"))
+                {
+                    MessageBox.Show("成功", "结果", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("失败", "结果", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            else
+            {
+                string Path = Environment.GetFolderPath(Environment.SpecialFolder.Startup);// System.Environment.GetFolderPath(System.Environment.SpecialFolder.Desktop) + "\\新建文件夹 (3)"; //"%USERPROFILE%\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup";
+
+                System.IO.File.Delete(Path + "\\FloatClipBoard.lnk");
+                if (System.IO.File.Exists(Path + "\\FloatClipBoard.lnk"))
+                {
+                    MessageBox.Show("失败", "结果", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                else
+                {
+                    MessageBox.Show("成功", "结果", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+
+            }
         }
     }
 }

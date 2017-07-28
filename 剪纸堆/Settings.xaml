@@ -9,9 +9,6 @@
         Title="Settings" Height="300" Width="300" ShowInTaskbar="False" ResizeMode="NoResize" SizeToContent="WidthAndHeight" WindowStyle="None">
     <Window.Resources>
         <Style TargetType="Button">
-            <Setter Property="Background" Value="{DynamicResource universalBrush}"/>
-            <Setter Property="FontSize" Value="14"/>
-
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type ButtonBase}">
@@ -41,20 +38,57 @@
                                 <Setter Property="TextElement.Foreground" TargetName="contentPresenter" Value="#FF838383"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
+
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
 
+        <Style TargetType="CheckBox" >
+            <Setter Property="Content" Value=""></Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type CheckBox}">
+                        <Grid >
+                            <Rectangle x:Name="outerRectangle" Fill="#FFFFD5D5"/>
+                            <Rectangle Margin="10" x:Name="highlightCircle" >
+                            </Rectangle>
+                            <ContentPresenter Margin="5,3" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="highlightCircle" Property="Fill" Value="#FFB1FFB1"/>
+                                <Setter TargetName="outerRectangle" Property="Fill" Value="#FFB1FFB1"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="False">
+                                <Setter TargetName="highlightCircle" Property="Fill" Value="#00000000"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="true">
+
+                                <Setter TargetName="highlightCircle" Property="Fill" Value="#00000000"/>
+                                <Setter TargetName="outerRectangle" Property="Fill" Value="#FFCCCCCC"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="true">
+
+                                <Setter TargetName="highlightCircle" Property="Fill" Value="#00000000"/>
+                                <Setter TargetName="outerRectangle" Property="Fill" Value="#FFBBBBBB"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
     <Grid Margin="4">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="80"/>
             <ColumnDefinition Width="4"/>
-            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="80"/>
             
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="4"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="4"/>
             <RowDefinition Height="Auto"/>
@@ -65,7 +99,10 @@
         <ScrollBar x:Name="scbOpacity" Grid.Column="2" Value="50" Orientation="Horizontal" Width="80" SmallChange="1" LargeChange="10" Maximum="100" ValueChanged="scbOpacity_ValueChanged"/>
         <TextBlock x:Name="tbkMax" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="2">最多：100条</TextBlock>
         <ScrollBar x:Name="scbMax" Grid.Column="2" Value="100" Orientation="Horizontal" Width="80" Grid.Row="2" LargeChange="10" SmallChange="1" Minimum="1" Maximum="100" ValueChanged="scbMax_ValueChanged"/>
-        <Button Content="保存" Grid.Row="4" Click="btnOKClickEventHandler"/>
-        <Button Content="取消" Grid.Row="4" Grid.Column="2" Click="Button_Click"/>
+
+        <CheckBox x:Name="cbxStartup" Grid.Row="4" Content="开机自启" Click="RadioButton_Click"/>
+        <CheckBox x:Name="cbxHide" Grid.Row="4" Grid.Column="2" Content="隐藏自身"/>
+        <Button Content="保存" Grid.Row="6" Click="btnOKClickEventHandler"/>
+        <Button Content="取消" Grid.Row="6" Grid.Column="2" Click="Button_Click"/>
     </Grid>
 </Window>

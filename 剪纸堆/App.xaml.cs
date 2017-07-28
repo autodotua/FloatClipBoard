@@ -22,12 +22,20 @@ namespace 剪纸堆
             checkConfig("TopToScreenTop", "100");
             checkConfig("Opacity", "0.5");
             checkConfig("MaxObject", "100");
+            checkConfig("Startup", "false");
+            checkConfig("Hide", "false");
             Window winMain = new MainWindow()
             {
                 Left =   int.Parse(cfa.AppSettings.Settings["LeftToScreenRight"].Value),// SystemParameters.WorkArea.Width - 300,
                 Top =  int.Parse(cfa.AppSettings.Settings["TopToScreenTop"].Value),
-                Opacity=double.Parse(cfa.AppSettings.Settings["Opacity"].Value)
+                Opacity=double.Parse(cfa.AppSettings.Settings["Opacity"].Value),
+                Visibility= cfa.AppSettings.Settings["Hide"].Value=="true"?Visibility.Hidden:Visibility.Visible
+
             };
+
+
+
+
             winMain.Show();
         }
 

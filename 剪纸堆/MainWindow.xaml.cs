@@ -45,7 +45,24 @@ namespace 剪纸堆
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         internal static extern IntPtr SendMessage(IntPtr hWnd, int Msg, IntPtr wParam, IntPtr lParam);
-    }
+
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct POINT
+        {
+            public int X;
+            public int Y;
+
+            public POINT(int x, int y)
+            {
+                this.X = x;
+                this.Y = y;
+            }
+        }
+            [DllImport("user32.dll", CharSet = CharSet.Auto)]
+            public static extern bool GetCursorPos(out POINT pt);
+        
+        }
 
     /// <summary>
     /// MainWindow.xaml 的交互逻辑
@@ -220,40 +237,8 @@ namespace 剪纸堆
         bool openLastNow = true;
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            IconAndNotify();
 
-           
-
-            string tempFileName = System.IO.Path.GetTempFileName();
-            FileStream fs = new FileStream(tempFileName, FileMode.Create);
-            Properties.Resources.icon.Save(fs);
-            fs.Close();
-
-            //设置托盘的各个属性
-            notifyIcon = new System.Windows.Forms.NotifyIcon()
-            {
-                BalloonTipText = "设置界面在托盘",
-                Text = "剪纸堆",
-                Icon = new System.Drawing.Icon(tempFileName),
-                Visible = true
-            };
-            notifyIcon.MouseClick += delegate (object notifySender, System.Windows.Forms.MouseEventArgs notifyE)
-             {
-
-             };
-            // new System.Windows.Forms.MouseEventHandler(NotifyIconClickEventHandler);
-
-            System.Windows.Forms.MenuItem miExit = new System.Windows.Forms.MenuItem("退出");
-            miExit.Click += new EventHandler(delegate (object sender3, EventArgs e3)
-            {
-                notifyIcon.Visible = false;
-                Application.Current.Shutdown();
-            });
-
-
-            System.Windows.Forms.MenuItem[] childen = new System.Windows.Forms.MenuItem[] { miExit };
-            notifyIcon.ContextMenu = new System.Windows.Forms.ContextMenu(childen);
-            this.Icon = new BitmapImage(new Uri(tempFileName));
-            
             if (!System.IO.File.Exists("OldClipBoard.xml"))
             {
                 XmlDeclaration xdec = xml.CreateXmlDeclaration("1.0", "UTF-8", null);
@@ -268,16 +253,16 @@ namespace 剪纸堆
                 xml.Load("OldClipBoard.xml");
                 root = xml.CreateElement("剪纸堆");
             }
-           root  = xml.DocumentElement;
-            int i=1;
+            root = xml.DocumentElement;
+            int i = 1;
             if (int.Parse(root.GetAttribute("Count")) > int.Parse(cfa.AppSettings.Settings["MaxObject"].Value))
             {
-                i= int.Parse(root.GetAttribute("Count"))-int.Parse(cfa.AppSettings.Settings["MaxObject"].Value);
+                i = int.Parse(root.GetAttribute("Count")) - int.Parse(cfa.AppSettings.Settings["MaxObject"].Value);
             }
 
-            for(;i <= int.Parse(root.GetAttribute("Count"));i++)
+            for (; i <= int.Parse(root.GetAttribute("Count")); i++)
             {
-                addNewButton(root["String_"+i.ToString()].GetAttribute("Value"));
+                addNewButton(root["String_" + i.ToString()].GetAttribute("Value"));
             }
             //foreach (XmlElement i in root)
             //{
@@ -290,6 +275,52 @@ namespace 剪纸堆
             InitCBViewer();
 
 
+        }
+
+        private void IconAndNotify()
+        {
+            string tempFileName = System.IO.Path.GetTempFileName();
+            FileStream fs = new FileStream(tempFileName, FileMode.Create);
+            Properties.Resources.icon.Save(fs);
+            fs.Close();
+
+            //设置托盘的各个属性
+            notifyIcon = new System.Windows.Forms.NotifyIcon()
+            {
+                BalloonTipText = "设置界面在托盘",
+                Text = "剪纸堆",
+                Icon = new System.Drawing.Icon(tempFileName),
+                Visible = true
+            };
+            notifyIcon.MouseClick += delegate (object notifySender, System.Windows.Forms.MouseEventArgs notifyE)
+            {
+                Visibility = Visibility == Visibility.Visible ? Visibility.Hidden : Visibility.Visible;
+            };
+            // new System.Windows.Forms.MouseEventHandler(NotifyIconClickEventHandler);
+
+            System.Windows.Forms.MenuItem miExit = new System.Windows.Forms.MenuItem("退出");
+            miExit.Click += delegate (object sender3, EventArgs e3)
+            {
+                notifyIcon.Visible = false;
+                Application.Current.Shutdown();
+            };
+            System.Windows.Forms.MenuItem miSettings = new System.Windows.Forms.MenuItem("设置");
+            miSettings.Click += delegate (object sender3, EventArgs e3)
+            {
+                Win32.POINT p = new Win32.POINT();
+                Win32.GetCursorPos(out p);
+                //Point p = Mouse.GetPosition(e3.Source as FrameworkElement);
+                Window settingPage = new Settings(this)
+                {
+                    Left = p.X ,
+                    Top = p.Y 
+                };
+                settingPage.Show();
+            };
+
+            System.Windows.Forms.MenuItem[] childen = new System.Windows.Forms.MenuItem[] {miSettings, miExit };
+            notifyIcon.ContextMenu = new System.Windows.Forms.ContextMenu(childen);
+            this.Icon = new BitmapImage(new Uri(tempFileName));
         }
 
         private void Grid_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
