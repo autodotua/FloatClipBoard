@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -12,10 +14,12 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using System.Xml;
 
 namespace 剪纸堆
 {
@@ -83,7 +87,7 @@ namespace 剪纸堆
 
             hWndNextViewer = IntPtr.Zero;
             hWndSource.RemoveHook(this.WinProc);
-           
+
             isViewing = false;
         }
 
@@ -106,13 +110,53 @@ namespace 剪纸堆
 
                 case Win32.WM_DRAWCLIPBOARD:
                     // clipboard content changed
-                    this.addNewButton();
+                    if(openLastNow)
+                    {
+                        openLastNow = false;
+                    }
+                    else
+                    {
+                        CreatNew();
+                    }
                     // pass the message to the next viewer.
                     Win32.SendMessage(hWndNextViewer, msg, wParam, lParam);
                     break;
             }
 
             return IntPtr.Zero;
+        }
+
+        private void CreatNew()
+        { 
+            if (Clipboard.ContainsText())
+            {
+                if (needAddButton > 0)
+                {
+                    needAddButton--;
+                    return;
+                }
+                string strValue;
+                do
+                {
+                    try
+                    {
+                        strValue = Clipboard.GetText();
+                    }
+                    catch
+                    {
+                        strValue = null;
+                    }
+                }
+                while (strValue == null);
+               // root.FirstChild.Value = (int.Parse(root.FirstChild.Value) + 1).ToString();
+                root.SetAttribute("Count", (int.Parse(root.GetAttribute("Count") )+ 1).ToString());
+                XmlElement xe = xml.CreateElement("String_"+root.GetAttribute("Count"));
+                xe.SetAttribute("Time", DateTime.Now.ToString() + "." + DateTime.Now.Millisecond);
+                xe.SetAttribute("Value", strValue);
+                root.AppendChild(xe);
+                xml.Save("OldClipBoard.xml");
+                addNewButton(strValue);
+            }
         }
 
         public static void sleep(int times)//延时，单位毫秒
@@ -124,12 +168,8 @@ namespace 剪纸堆
                 Application.Current.Dispatcher.Invoke(DispatcherPriority.Background, new Action(delegate { }));
             }
         }
-        private void addNewButton()
-        {if(needAddButton>0)
-            {
-                needAddButton--;
-                return;
-            }
+        private void addNewButton(string strValue)
+        {
             Button tempButton = new Button()
             {
                 HorizontalAlignment = HorizontalAlignment.Center,
@@ -137,64 +177,39 @@ namespace 剪纸堆
                 MaxWidth = 180
             };
             Border tempBorder = new Border();
-         
-
-               // IDataObject iData = new DataObject();
-          //  iData = Clipboard.GetDataObject();
-          if(Clipboard.ContainsText())
-            //if (iData.GetDataPresent(DataFormats.Text))
+            tempButton.Content = strValue;
+            tempButton.Style = Resources["tempButtonStyle"] as Style;
+            tempBorder = new Border()
             {
-                string strValue;
-                //iData.GetDataPresent(DataFormats.Bitmap)  
-                do
+                BorderThickness = new Thickness(5, 5, 5, 5),
+                CornerRadius = new CornerRadius(3, 3, 3, 3),
+                BorderBrush = new SolidColorBrush(Color.FromRgb(204, 204, 255)),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                MaxHeight = 100,
+                MaxWidth = 180,
+                Effect = new System.Windows.Media.Effects.DropShadowEffect()
                 {
-                    try
-                    {
-                        strValue = Clipboard.GetText();
-                    }
-                    catch
-                    {
-                        strValue = null;
-                        //sleep(1000);
-                                            }
-                    //Debug.WriteLine(value);
-                }
-                while (strValue == null);
-                tempButton.Content = strValue;
-                tempButton.Style = Resources["tempButtonStyle"] as Style;
-                tempBorder = new Border()
-                {
-                    BorderThickness = new Thickness(5,5,5, 5),
-                    CornerRadius = new CornerRadius(3, 3, 3, 3),
-                    BorderBrush = new SolidColorBrush(Color.FromRgb(204, 204, 255)),
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    MaxHeight = 100,
-                    MaxWidth = 180,
-                    Effect = new System.Windows.Media.Effects.DropShadowEffect()
-                    {
-                        Color = Color.FromRgb(80, 80, 100),
-                        Opacity = 0.5,
+                    Color = Color.FromRgb(80, 80, 100),
+                    Opacity = 0.5,
+                },
+                Child = System.Windows.Markup.XamlReader.Parse(System.Windows.Markup.XamlWriter.Save(tempButton)) as Button
+            };
 
-                    },
-                    //Child = System.Windows.Markup.XamlReader.Parse(System.Windows.Markup.XamlWriter.Save(tempButton)) as Button
+            tempButton.Style = Resources["buttonStyle"] as Style;
 
-                };
-
-                tempButton.Style = Resources["buttonStyle"] as Style;
-
-                tempButton.Click += TempButtonClickEventHandler;
+            tempButton.Click += TempButtonClickEventHandler;
 
 
-                    // Child = temp
-                };
-                Grid tempGrid = new Grid();
-             //tempGrid.Children.Add(tempBorder);
-           tempGrid.Children.Add(tempButton);
+            // Child = temp
 
-            spnl.Children.Insert(3, new TextBlock());
-            spnl.Children.Insert(3, tempGrid);
+            Grid tempGrid = new Grid();
+            tempGrid.Children.Add(tempBorder);
+            tempGrid.Children.Add(tempButton);
 
-                //spnl.Children.Add(tempGrid);
+            spnl.Children.Insert(0, new TextBlock());
+            spnl.Children.Insert(0, tempGrid);
+
+            //spnl.Children.Add(tempGrid);
             //spnl.Children.Add(new TextBlock());
         }
         int needAddButton = 0;
@@ -202,14 +217,75 @@ namespace 剪纸堆
         {
             needAddButton = 2;
             Clipboard.SetText((sender as Button).Content as string);
-            
+
         }
 
         List<Border> buttons = new List<Border>();
+        Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+        private System.Windows.Forms.NotifyIcon notifyIcon;
+        XmlDocument xml = new XmlDocument();
+        XmlElement root;
+        bool openLastNow = true;
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            this.InitCBViewer();
-          
+            string tempFileName = System.IO.Path.GetTempFileName();
+            FileStream fs = new FileStream(tempFileName, FileMode.Create);
+            Properties.Resources.icon.Save(fs);
+            fs.Close();
+
+            //设置托盘的各个属性
+            notifyIcon = new System.Windows.Forms.NotifyIcon()
+            {
+                BalloonTipText = "设置界面在托盘",
+                Text = "剪纸堆",
+                Icon = new System.Drawing.Icon(tempFileName),
+                Visible = true
+            };
+            notifyIcon.MouseClick += delegate (object notifySender, System.Windows.Forms.MouseEventArgs notifyE)
+             {
+
+             };
+            // new System.Windows.Forms.MouseEventHandler(NotifyIconClickEventHandler);
+
+            System.Windows.Forms.MenuItem miExit = new System.Windows.Forms.MenuItem("退出");
+            miExit.Click += new EventHandler(delegate (object sender3, EventArgs e3)
+            {
+                notifyIcon.Visible = false;
+                Application.Current.Shutdown();
+            });
+
+
+            System.Windows.Forms.MenuItem[] childen = new System.Windows.Forms.MenuItem[] { miExit };
+            notifyIcon.ContextMenu = new System.Windows.Forms.ContextMenu(childen);
+            this.Icon = new BitmapImage(new Uri(tempFileName));
+            
+            if (!System.IO.File.Exists("OldClipBoard.xml"))
+            {
+                XmlDeclaration xdec = xml.CreateXmlDeclaration("1.0", "UTF-8", null);
+                xml.AppendChild(xdec);
+                root = xml.CreateElement("剪纸堆");
+                root.SetAttribute("Count", "0");
+                xml.AppendChild(root);
+                xml.Save("OldClipBoard.xml");
+            }
+            else
+            {
+                xml.Load("OldClipBoard.xml");
+                
+            }
+           root  = xml.DocumentElement;
+
+            //for (int i = 0; i < int.Parse(root.GetAttribute("Count")); i++)
+            //{
+            //    addNewButton();
+            //}
+            foreach (XmlElement i in root)
+            {
+                addNewButton(i.GetAttribute("Value"));
+            }
+            waitTimer.Interval = new TimeSpan(10000 * 1000);
+            waitTimer.Tick += new EventHandler(waitTimer_Tick);
+            InitCBViewer();
 
 
         }
@@ -217,6 +293,77 @@ namespace 剪纸堆
         private void Grid_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             base.DragMove();
+        }
+
+        private void Window_MouseEnter(object sender, MouseEventArgs e)
+        {
+            WindowAnimation(1);
+            //Debug.WriteLine("enter");
+        }
+
+        private void WindowAnimation(int type)
+        {
+            NameScope.SetNameScope(this, new NameScope());
+            this.RegisterName(this.Name, this);
+
+            DoubleAnimation da = new DoubleAnimation();
+            switch (type)
+            {
+                case 1:
+
+                    da.To = SystemParameters.WorkArea.Height;
+                    break;
+                case 2:
+
+                    da.To = 300;
+                    break;
+            }
+            da.Duration = new Duration(TimeSpan.FromMilliseconds(500));
+            Storyboard.SetTargetName(da, this.Name);
+            Storyboard.SetTargetProperty(da, new PropertyPath(Window.HeightProperty));
+            Storyboard sb = new Storyboard();
+            sb.Children.Add(da);
+            sb.Begin(this);
+        }
+        DispatcherTimer waitTimer = new System.Windows.Threading.DispatcherTimer();
+        private void mainWindow_MouseLeave(object sender, MouseEventArgs e)
+        {
+            try
+            {
+                
+                waitTimer.IsEnabled = false;
+                waitTimer.Start();  
+            }
+            catch
+            {
+
+            }
+            // Debug.WriteLine("leave");
+            ChangeAppSettings("LeftToScreenRight", Left.ToString());
+            ChangeAppSettings("TopToScreenTop", Top.ToString());
+            cfa.Save();
+            //Debug.WriteLine("Changed");
+        }
+
+        private void waitTimer_Tick(object sender, EventArgs e)
+        {
+           if(Mouse.GetPosition(this as FrameworkElement).X<0 && Mouse.GetPosition(this as FrameworkElement).Y<0)
+            WindowAnimation(2);
+            waitTimer.IsEnabled = false;
+            return;
+        }
+
+        private void ChangeAppSettings(string key, string targetValue)
+        {
+            
+            if (cfa.AppSettings.Settings[key] == null)
+            {
+                cfa.AppSettings.Settings.Add(new KeyValueConfigurationElement(key, targetValue));
+            }
+            else
+            {
+                cfa.AppSettings.Settings[key].Value = targetValue;
+            }
         }
     }
 }
