@@ -24,17 +24,11 @@ AllowsTransparency="True"
         <Style TargetType="Button" x:Key="buttonStyle">
             <Setter Property="Background" Value="{DynamicResource universalBrush}"/>
             <Setter Property="FontSize" Value="14"/>
-          
+
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type ButtonBase}">
                         <Border x:Name="border" BorderThickness="3" CornerRadius="3" BorderBrush="{DynamicResource universalBrush}" Background="{DynamicResource universalBrush}" SnapsToDevicePixels="True" >
-                          
-                            <!--<Border.Effect>
-                             
-                                        <DropShadowEffect Color="#FF000074" RenderingBias="Quality" Opacity="0.5"/>
-                                    
-                            </Border.Effect>-->
                             <ContentPresenter x:Name="contentPresenter" ContentTemplate="{TemplateBinding ContentTemplate}" Content="{TemplateBinding Content}" ContentStringFormat="{TemplateBinding ContentStringFormat}" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="5,3" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -80,30 +74,52 @@ AllowsTransparency="True"
             </Setter>
         </Style>
 
+        <ControlTemplate x:Key="ScrollViewerControlTemplate1" TargetType="{x:Type ScrollViewer}">
+            <Grid x:Name="Grid" Background="{TemplateBinding Background}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <!--<Rectangle x:Name="Corner" Grid.Column="0" Fill="{DynamicResource {x:Static SystemColors.ControlBrushKey}}" Grid.Row="1"/>-->
+                <ScrollContentPresenter x:Name="PART_ScrollContentPresenter" CanContentScroll="{TemplateBinding CanContentScroll}" CanHorizontallyScroll="False" CanVerticallyScroll="False" ContentTemplate="{TemplateBinding ContentTemplate}" Content="{TemplateBinding Content}" Grid.Column="0" Margin="{TemplateBinding Padding}" Grid.Row="0"/>
+                <ScrollBar Opacity="{DynamicResource Opacity}" x:Name="PART_VerticalScrollBar" AutomationProperties.AutomationId="VerticalScrollBar" Cursor="Arrow" Grid.Column="1" Maximum="{TemplateBinding ScrollableHeight}" Minimum="0" Grid.Row="0" Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}" Value="{Binding VerticalOffset, Mode=OneWay, RelativeSource={RelativeSource TemplatedParent}}" ViewportSize="{TemplateBinding ViewportHeight}"/>
+                <ScrollBar x:Name="PART_HorizontalScrollBar" AutomationProperties.AutomationId="HorizontalScrollBar" Cursor="Arrow" Grid.Column="0" Maximum="{TemplateBinding ScrollableWidth}" Minimum="0" Orientation="Horizontal" Grid.Row="1" Visibility="{TemplateBinding ComputedHorizontalScrollBarVisibility}" Value="{Binding HorizontalOffset, Mode=OneWay, RelativeSource={RelativeSource TemplatedParent}}" ViewportSize="{TemplateBinding ViewportWidth}"/>
+            </Grid>
+        </ControlTemplate>
+        <sys:Double x:Key="Opacity" >0</sys:Double>
+
 
 
     </Window.Resources>
-    <StackPanel>
-        <Grid MouseLeftButtonDown="Grid_MouseLeftButtonDown">
+    <ScrollViewer x:Name="sv" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" Grid.Row="2" Template="{DynamicResource ScrollViewerControlTemplate1}">
+        <ScrollViewer.Content>
+            <Grid >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="24"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-            <Border CornerRadius="3"  HorizontalAlignment="Center" VerticalAlignment="Center" BorderBrush="{DynamicResource headerColor}" BorderThickness="4">
-                <Border.Effect>
-                    <DropShadowEffect RenderingBias="Quality" Color="#CC555500" Opacity="0.5"/>
-                </Border.Effect>
-                <TextBlock Name="header" Text="剪纸堆" Foreground="Transparent" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="5,1"/>
-
-            </Border>
-            <Grid Background="{DynamicResource headerColor}" HorizontalAlignment="Center" VerticalAlignment="Center">
-
-                <TextBlock Text="剪纸堆" Foreground="Black" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="6,2" FontFamily="Microsoft YaHei" />
-
+                <Grid MouseLeftButtonDown="Grid_MouseLeftButtonDown" VerticalAlignment="Top">
+                    <Border CornerRadius="3"  HorizontalAlignment="Center" VerticalAlignment="Center" BorderBrush="{DynamicResource headerColor}" BorderThickness="4">
+                        <Border.Effect>
+                            <DropShadowEffect RenderingBias="Quality" Color="#CC555500" Opacity="0.5"/>
+                        </Border.Effect>
+                        <TextBlock Name="header" Text="剪纸堆" Foreground="Transparent" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="5,1"/>
+                    </Border>
+                    <Grid Background="{DynamicResource headerColor}" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock Text="剪纸堆" Foreground="Black" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="6,2" FontFamily="Microsoft YaHei"  PreviewMouseRightButtonUp="TextBlock_PreviewMouseRightButtonUp"/>
+                    </Grid>
+                </Grid>
+                <StackPanel Name="spnl" Orientation="Vertical" ScrollViewer.VerticalScrollBarVisibility="Auto" Grid.Row="2" Margin="0,0,8,0"/>
             </Grid>
+        </ScrollViewer.Content>
 
-        </Grid>
-        <TextBlock/>
-        <TextBlock/>
-        <StackPanel Name="spnl">
+    </ScrollViewer>
 
-    </StackPanel>
-    </StackPanel>
 </Window>

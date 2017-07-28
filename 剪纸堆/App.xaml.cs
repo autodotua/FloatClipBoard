@@ -13,17 +13,31 @@ namespace 剪纸堆
     /// </summary>
     public partial class App : Application
     {
+        Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);//配置项
+
         protected override void OnStartup(StartupEventArgs e)
         {
-            Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);//配置项
 
-
+            checkConfig("LeftToScreenRight","300");
+            checkConfig("TopToScreenTop", "100");
+            checkConfig("Opacity", "0.5");
+            checkConfig("MaxObject", "100");
             Window winMain = new MainWindow()
             {
-                Left = cfa.AppSettings.Settings["LeftToScreenRight"] == null ? 300 : int.Parse(cfa.AppSettings.Settings["LeftToScreenRight"].Value),// SystemParameters.WorkArea.Width - 300,
-                Top = cfa.AppSettings.Settings["TopToScreenTop"] == null ?100 : int.Parse(cfa.AppSettings.Settings["TopToScreenTop"].Value)
+                Left =   int.Parse(cfa.AppSettings.Settings["LeftToScreenRight"].Value),// SystemParameters.WorkArea.Width - 300,
+                Top =  int.Parse(cfa.AppSettings.Settings["TopToScreenTop"].Value),
+                Opacity=double.Parse(cfa.AppSettings.Settings["Opacity"].Value)
             };
             winMain.Show();
+        }
+
+        private void checkConfig(string key,string defaultValue)
+        {
+            if(cfa.AppSettings.Settings[key]==null)
+            {
+                cfa.AppSettings.Settings.Add(key, defaultValue);
+                cfa.Save();
+            }
         }
     }
 }

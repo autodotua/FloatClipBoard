@@ -159,15 +159,7 @@ namespace 剪纸堆
             }
         }
 
-        public static void sleep(int times)//延时，单位毫秒
-        {
-            int start = Environment.TickCount;
-            while (Math.Abs(Environment.TickCount - start) < times)
-            {
-                // Application.DoEvents();
-                Application.Current.Dispatcher.Invoke(DispatcherPriority.Background, new Action(delegate { }));
-            }
-        }
+      
         private void addNewButton(string strValue)
         {
             Button tempButton = new Button()
@@ -221,13 +213,16 @@ namespace 剪纸堆
         }
 
         List<Border> buttons = new List<Border>();
-        Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-        private System.Windows.Forms.NotifyIcon notifyIcon;
+        public Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+        public System.Windows.Forms.NotifyIcon notifyIcon;
         XmlDocument xml = new XmlDocument();
         XmlElement root;
         bool openLastNow = true;
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+
+           
+
             string tempFileName = System.IO.Path.GetTempFileName();
             FileStream fs = new FileStream(tempFileName, FileMode.Create);
             Properties.Resources.icon.Save(fs);
@@ -271,20 +266,27 @@ namespace 剪纸堆
             else
             {
                 xml.Load("OldClipBoard.xml");
-                
+                root = xml.CreateElement("剪纸堆");
             }
            root  = xml.DocumentElement;
-
-            //for (int i = 0; i < int.Parse(root.GetAttribute("Count")); i++)
-            //{
-            //    addNewButton();
-            //}
-            foreach (XmlElement i in root)
+            int i=1;
+            if (int.Parse(root.GetAttribute("Count")) > int.Parse(cfa.AppSettings.Settings["MaxObject"].Value))
             {
-                addNewButton(i.GetAttribute("Value"));
+                i= int.Parse(root.GetAttribute("Count"))-int.Parse(cfa.AppSettings.Settings["MaxObject"].Value);
             }
+
+            for(;i <= int.Parse(root.GetAttribute("Count"));i++)
+            {
+                addNewButton(root["String_"+i.ToString()].GetAttribute("Value"));
+            }
+            //foreach (XmlElement i in root)
+            //{
+            //    addNewButton(i.GetAttribute("Value"));
+            //}
             waitTimer.Interval = new TimeSpan(10000 * 1000);
             waitTimer.Tick += new EventHandler(waitTimer_Tick);
+            InitalizeAnimation(this, HeightProperty);
+
             InitCBViewer();
 
 
@@ -300,32 +302,71 @@ namespace 剪纸堆
             WindowAnimation(1);
             //Debug.WriteLine("enter");
         }
-
+        DoubleAnimation da = new DoubleAnimation();
+        Storyboard sb = new Storyboard();
+       // Storyboard sb2 = new Storyboard();
+        private void InitalizeAnimation(object animationObject, DependencyProperty property)
+        {
+            string tempName = "tempName";
+            NameScope.SetNameScope(animationObject as DependencyObject, new NameScope());
+            RegisterName(tempName, this);
+            da.Duration = new Duration(TimeSpan.FromMilliseconds(500));
+            Storyboard.SetTargetName(da, tempName);
+            Storyboard.SetTargetProperty(da, new PropertyPath(property));
+            
+            sb.Children.Add(da);
+        }
         private void WindowAnimation(int type)
         {
-            NameScope.SetNameScope(this, new NameScope());
-            this.RegisterName(this.Name, this);
 
-            DoubleAnimation da = new DoubleAnimation();
+            //Debug.WriteLine(spnl.ActualHeight);
             switch (type)
             {
                 case 1:
 
-                    da.To = SystemParameters.WorkArea.Height;
+                    da.To = spnl.ActualHeight+64 > SystemParameters.WorkArea.Height -Top? SystemParameters.WorkArea.Height - Top : spnl.ActualHeight+64;
                     break;
                 case 2:
 
                     da.To = 300;
                     break;
             }
-            da.Duration = new Duration(TimeSpan.FromMilliseconds(500));
-            Storyboard.SetTargetName(da, this.Name);
-            Storyboard.SetTargetProperty(da, new PropertyPath(Window.HeightProperty));
-            Storyboard sb = new Storyboard();
-            sb.Children.Add(da);
+
             sb.Begin(this);
+            opacityTimer.Interval = new TimeSpan(10000 * 10);
+            opacityTimer.Tick += new EventHandler(opacityTimer1);
+            opacityTimer.Start();
         }
-        DispatcherTimer waitTimer = new System.Windows.Threading.DispatcherTimer();
+
+        private void opacityTimer1(object sender, EventArgs e)
+        {
+            //Debug.WriteLine(da.To == 300);
+            if(da.To==300)
+            {
+                if ((double)Resources["Opacity"] >= 0)
+                {
+                    Resources["Opacity"] = (double)Resources["Opacity"] - 0.04;
+                }
+                else
+                {
+                    opacityTimer.Stop();
+                }
+            }
+            else
+            {
+                if ((double)Resources["Opacity"] <=1)
+                {
+                    Resources["Opacity"] = (double)Resources["Opacity"] + 0.04;
+                }
+                else
+                {
+                    opacityTimer.Stop();
+                }
+            }
+        }
+
+        DispatcherTimer waitTimer = new DispatcherTimer();
+        DispatcherTimer opacityTimer = new DispatcherTimer();
         private void mainWindow_MouseLeave(object sender, MouseEventArgs e)
         {
             try
@@ -339,8 +380,10 @@ namespace 剪纸堆
 
             }
             // Debug.WriteLine("leave");
-            ChangeAppSettings("LeftToScreenRight", Left.ToString());
-            ChangeAppSettings("TopToScreenTop", Top.ToString());
+      
+            cfa.AppSettings.Settings["LeftToScreenRight"].Value = Left.ToString();
+            cfa.AppSettings.Settings["TopToScreenTop"].Value = Top.ToString();
+            
             cfa.Save();
             //Debug.WriteLine("Changed");
         }
@@ -353,17 +396,19 @@ namespace 剪纸堆
             return;
         }
 
-        private void ChangeAppSettings(string key, string targetValue)
+     
+
+        private void TextBlock_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
         {
-            
-            if (cfa.AppSettings.Settings[key] == null)
+            Point p = Mouse.GetPosition(e.Source as FrameworkElement);
+            Window settingPage = new Settings(this)
             {
-                cfa.AppSettings.Settings.Add(new KeyValueConfigurationElement(key, targetValue));
-            }
-            else
-            {
-                cfa.AppSettings.Settings[key].Value = targetValue;
-            }
+                Left = p.X+this.Left,
+            Top = p.Y+this.Top,
+            };
+            this.Topmost = false;
+            settingPage.ShowDialog();
+            this.Topmost = true;
         }
     }
 }
