@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
@@ -20,8 +21,9 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.Xml;
+using static FloatClipboard.SharedStaticData;
 
-namespace 剪纸堆
+namespace FloatClipboard
 {
     internal static class Win32
     {
@@ -87,7 +89,9 @@ namespace 剪纸堆
         private HwndSource hWndSource;
 
         private bool isViewing;
-
+        /// <summary>
+        /// 初始化剪贴板监控
+        /// </summary>
         private void InitCBViewer()
         {
             WindowInteropHelper wih = new WindowInteropHelper(this);
@@ -97,7 +101,9 @@ namespace 剪纸堆
             hWndNextViewer = Win32.SetClipboardViewer(hWndSource.Handle);   // set this window as a viewer
             isViewing = true;
         }
-
+        /// <summary>
+        /// 关闭剪贴板监控（无用）
+        /// </summary>
         private void CloseCBViewer()
         {
             // remove this window from the clipboard viewer chain
@@ -156,15 +162,33 @@ namespace 剪纸堆
 
         #region 字段声明
         List<Border> buttons = new List<Border>();
-        public Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
         public System.Windows.Forms.NotifyIcon notifyIcon;
         XmlDocument xml = new XmlDocument();
         XmlElement root;
         bool openLastNow = true;
-        DispatcherTimer waitTimer = new DispatcherTimer();
-        DispatcherTimer opacityTimer = new DispatcherTimer();
-        DoubleAnimation da = new DoubleAnimation();
-        Storyboard sb = new Storyboard();
+        /// <summary>
+        /// 主界面高度动画
+        /// </summary>
+        DoubleAnimation aniHeight;
+        /// <summary>
+        /// 滚动条透明度动画
+        /// </summary>
+        DoubleAnimation aniScrollBarOpacity;
+        /// <summary>
+        /// 主界面透明度动画
+        /// </summary>
+        DoubleAnimation aniOpacity;
+        /// <summary>
+        /// 动画板
+        /// </summary>
+        Storyboard storyBoard;
+        /// <summary>
+        /// 滚动条
+        /// </summary>
+        ScrollBar scroll;
+        /// <summary>
+        /// 因为复制了文本以后剪贴板改变会重新激发事件，所以用这个来判断剪贴板是否是手动改变的
+        /// </summary>
         int needAddButton = 0;
         #endregion
 
@@ -205,10 +229,10 @@ namespace 剪纸堆
 
                 AddNewButton(strValue);
 
-                if (spnl.Children.Count > 2 * int.Parse(cfa.AppSettings.Settings["MaxObject"].Value))
+                if (stk.Children.Count > 2 * set.MaxObject)
                 {
-                    spnl.Children.RemoveAt(spnl.Children.Count - 1);
-                    spnl.Children.RemoveAt(spnl.Children.Count - 1);
+                    stk.Children.RemoveAt(stk.Children.Count - 1);
+                    stk.Children.RemoveAt(stk.Children.Count - 1);
                 }
             }
         }
@@ -246,7 +270,7 @@ namespace 剪纸堆
 
             tempButton.Style = Resources["buttonStyle"] as Style;
 
-            tempButton.Click += TempButtonClickEventHandler;
+            tempButton.Click += BtnTextClickEventHandler;
 
 
             // Child = temp
@@ -255,8 +279,8 @@ namespace 剪纸堆
             tempGrid.Children.Add(tempBorder);
             tempGrid.Children.Add(tempButton);
 
-            spnl.Children.Insert(0, new TextBlock());
-            spnl.Children.Insert(0, tempGrid);
+            stk.Children.Insert(0, new TextBlock());
+            stk.Children.Insert(0, tempGrid);
 
             //spnl.Children.Add(tempGrid);
             //spnl.Children.Add(new TextBlock());
@@ -267,7 +291,7 @@ namespace 剪纸堆
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void TempButtonClickEventHandler(object sender, RoutedEventArgs e)
+        private void BtnTextClickEventHandler(object sender, RoutedEventArgs e)
         {
             needAddButton = 2;
             Clipboard.SetText((sender as Button).Content as string);
@@ -282,11 +306,13 @@ namespace 剪纸堆
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void WinMainLoadedEventHandler(object sender, RoutedEventArgs e)
+        private  void WinMainLoadedEventHandler(object sender, RoutedEventArgs e)
         {
+            scroll = FindVisualChildHelper.FindVisualChild<ScrollBar>(sv);
+
             IconAndNotify();
 
-            if (!System.IO.File.Exists("OldClipBoard.xml"))
+            if (!File.Exists("OldClipBoard.xml"))
             {
                 XmlDeclaration xdec = xml.CreateXmlDeclaration("1.0", "UTF-8", null);
                 xml.AppendChild(xdec);
@@ -300,28 +326,30 @@ namespace 剪纸堆
                 xml.Load("OldClipBoard.xml");
                 root = xml.CreateElement("剪纸堆");
             }
-            root = xml.DocumentElement;
-            int i = 1;
-            if (int.Parse(root.GetAttribute("Count")) > int.Parse(cfa.AppSettings.Settings["MaxObject"].Value))
-            {
-                i = int.Parse(root.GetAttribute("Count")) - int.Parse(cfa.AppSettings.Settings["MaxObject"].Value) + 1;
-            }
 
-            for (; i <= int.Parse(root.GetAttribute("Count")); i++)
-            {
-                AddNewButton(root["String_" + i.ToString()].GetAttribute("Value"));
-            }
+            LoadHistory();
             //foreach (XmlElement i in root)
             //{
             //    addNewButton(i.GetAttribute("Value"));
             //}
-            waitTimer.Interval = new TimeSpan(10000 * 1000);
-            waitTimer.Tick += new EventHandler(AnimationWatingTimerTickEventHandler);
-            InitalizeAnimation(this, HeightProperty);
+            //waitTimer.Interval = new TimeSpan(10000 * 1000);
+            // waitTimer.Tick += new EventHandler(AnimationWatingTimerTickEventHandler);
+            InitalizeAnimation();
 
             InitCBViewer();
 
+             WinMainMouseLeaveEventHandler(null, null);
 
+        }
+
+        public void LoadHistory()
+        {
+            root = xml.DocumentElement;
+            int count = int.Parse(root.GetAttribute("Count"));
+            for (int i = (count > set.MaxObject ? count - set.MaxObject + 1 : 1); i <= count; i++)
+            {
+                AddNewButton(root["String_" + i.ToString()].GetAttribute("Value"));
+            }
         }
 
         /// <summary>
@@ -329,48 +357,53 @@ namespace 剪纸堆
         /// </summary>
         private void IconAndNotify()
         {
-            string tempFileName = System.IO.Path.GetTempFileName();
-            FileStream fs = new FileStream(tempFileName, FileMode.Create);
-            Properties.Resources.icon.Save(fs);
-            fs.Close();
 
             //设置托盘的各个属性
             notifyIcon = new System.Windows.Forms.NotifyIcon()
             {
                 BalloonTipText = "设置界面在托盘",
                 Text = "剪纸堆",
-                Icon = new System.Drawing.Icon(tempFileName),
+                Icon = Properties.Resources.icon,
                 Visible = true
             };
-            notifyIcon.MouseClick += delegate (object notifySender, System.Windows.Forms.MouseEventArgs notifyE)
-            {
-                Visibility = Visibility == Visibility.Visible ? Visibility.Hidden : Visibility.Visible;
-            };
+            notifyIcon.MouseClick += (object notifySender, System.Windows.Forms.MouseEventArgs notifyE) =>
+           {
+               if (notifyE.Button == System.Windows.Forms.MouseButtons.Left)
+               {
+                   Visibility = Visibility == Visibility.Visible ? Visibility.Hidden : Visibility.Visible;
+               }
+           };
             // new System.Windows.Forms.MouseEventHandler(NotifyIconClickEventHandler);
 
             System.Windows.Forms.MenuItem miExit = new System.Windows.Forms.MenuItem("退出");
-            miExit.Click += delegate (object sender3, EventArgs e3)
-            {
-                notifyIcon.Visible = false;
-                Application.Current.Shutdown();
-            };
+            miExit.Click += (object sender3, EventArgs e3) =>
+           {
+               notifyIcon.Visible = false;
+               Close();
+           };
             System.Windows.Forms.MenuItem miSettings = new System.Windows.Forms.MenuItem("设置");
-            miSettings.Click += delegate (object sender3, EventArgs e3)
-            {
-                Win32.POINT p = new Win32.POINT();
-                Win32.GetCursorPos(out p);
-                //Point p = Mouse.GetPosition(e3.Source as FrameworkElement);
-                Window settingPage = new Settings(this)
-                {
-                    Left = p.X,
-                    Top = p.Y
-                };
-                settingPage.Show();
-            };
+            miSettings.Click += (object sender3, EventArgs e3) =>
+           {
+               //Win32.POINT p = new Win32.POINT();
+               //Win32.GetCursorPos(out p);
+               // //Point p = Mouse.GetPosition(e3.Source as FrameworkElement);
+               // Window settingPage = new WinSettings()
+               //{
+               //    Left = p.X,
+               //    Top = p.Y
+               //};
+               WinSettings winSettings = new WinSettings();
+               //{
+               //    WindowStyle = WindowStyle.SingleBorderWindow,
+               //    WindowStartupLocation = WindowStartupLocation.CenterScreen,
+               //    ShowInTaskbar = true,
+               //};
+               winSettings.Show();
+           };
 
             System.Windows.Forms.MenuItem[] childen = new System.Windows.Forms.MenuItem[] { miSettings, miExit };
             notifyIcon.ContextMenu = new System.Windows.Forms.ContextMenu(childen);
-            this.Icon = new BitmapImage(new Uri(tempFileName));
+            // this.Icon = new BitmapImage(new Uri(tempFileName));
         }
 
         /// <summary>
@@ -380,7 +413,7 @@ namespace 剪纸堆
         /// <param name="e"></param>
         private void HeadingGridMouseLeftButtonDownEventHandler(object sender, MouseButtonEventArgs e)
         {
-            base.DragMove();
+            DragMove();
         }
 
         /// <summary>
@@ -393,22 +426,47 @@ namespace 剪纸堆
             WindowAnimation(1);
             //Debug.WriteLine("enter");
         }
-        
+
         /// <summary>
         /// 窗口动画的初始化部分
         /// </summary>
-        /// <param name="animationObject"></param>
-        /// <param name="property"></param>
-        private void InitalizeAnimation(object animationObject, DependencyProperty property)
+        private void InitalizeAnimation()
         {
-            string tempName = "tempName";
-            NameScope.SetNameScope(animationObject as DependencyObject, new NameScope());
-            RegisterName(tempName, this);
-            da.Duration = new Duration(TimeSpan.FromMilliseconds(500));
-            Storyboard.SetTargetName(da, tempName);
-            Storyboard.SetTargetProperty(da, new PropertyPath(property));
+            //string tempName = "tempName";
+            //NameScope.SetNameScope(animationObject as DependencyObject, new NameScope());
+            //RegisterName(tempName, this);
+            //aniHeight.Duration = new Duration(TimeSpan.FromMilliseconds(500));
+            //Storyboard.SetTargetName(aniHeight, tempName);
+            //Storyboard.SetTargetProperty(aniHeight, new PropertyPath(property));
+            //storyBoard.Children.Add(aniHeight);
 
-            sb.Children.Add(da);
+            aniHeight = new DoubleAnimation()
+            {
+                Duration = TimeSpan.FromSeconds(1),
+                EasingFunction = new CubicEase() { EasingMode = EasingMode.EaseInOut }
+            };
+            aniScrollBarOpacity = new DoubleAnimation()
+            {
+                Duration = TimeSpan.FromSeconds(1),
+                EasingFunction = new CubicEase() { EasingMode = EasingMode.EaseInOut }
+            };
+            aniOpacity = new DoubleAnimation()
+            {
+                Duration = TimeSpan.FromSeconds(1),
+                EasingFunction = new CubicEase() { EasingMode = EasingMode.EaseInOut }
+            };
+
+            Storyboard.SetTarget(aniHeight, this);
+            Storyboard.SetTargetProperty(aniHeight, new PropertyPath(HeightProperty));
+            Storyboard.SetTarget(aniScrollBarOpacity, scroll);
+            Storyboard.SetTargetProperty(aniScrollBarOpacity, new PropertyPath(OpacityProperty));
+            Storyboard.SetTarget(aniOpacity, this);
+            Storyboard.SetTargetProperty(aniOpacity, new PropertyPath(OpacityProperty));
+
+            storyBoard = new Storyboard();
+            storyBoard.Children.Add(aniHeight);
+            storyBoard.Children.Add(aniOpacity);
+            storyBoard.Children.Add(aniScrollBarOpacity);
         }
 
         /// <summary>
@@ -417,44 +475,18 @@ namespace 剪纸堆
         /// <param name="type"></param>
         private void WindowAnimation(int type)
         {
+            aniScrollBarOpacity.To = type == 1 ? 1 : 0;
+            aniOpacity.To = type == 1 ? 1 : set.Opacity;
 
-            if (spnl.ActualHeight + 64 > SystemParameters.WorkArea.Height)
+            if (stk.ActualHeight + 64 > SystemParameters.WorkArea.Height)
             {
-                switch (type)
-                {
-                    case 1:
-
-                        da.To = SystemParameters.WorkArea.Height - Top;
-                        break;
-                    case 2:
-
-                        da.To = 300;
-                        break;
-                }
-
-                sb.Begin(this);
-                opacityTimer.Interval = new TimeSpan(10000 * 10);
-                opacityTimer.Tick += new EventHandler(ScrollBarOpacityChangeTimerTickEventHandler);
-                opacityTimer.Start();
+                aniHeight.To = type == 1 ? SystemParameters.WorkArea.Height - Top : set.Height;
             }
             else
             {
-
-                switch (type)
-                {
-                    case 1:
-
-                        da.To = spnl.ActualHeight + 64;
-                        break;
-                    case 2:
-
-                        da.To = 300;
-                        break;
-                }
-
-                sb.Begin(this);
-
+                aniHeight.To = type == 1 ? stk.ActualHeight + 64 : set.Height;
             }
+            storyBoard.Begin(this);
         }
 
         /// <summary>
@@ -462,56 +494,62 @@ namespace 剪纸堆
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ScrollBarOpacityChangeTimerTickEventHandler(object sender, EventArgs e)
-        {
-            //Debug.WriteLine(da.To == 300);
-            if (da.To == 300)
-            {
-                if ((double)Resources["Opacity"] >= 0)
-                {
-                    Resources["Opacity"] = (double)Resources["Opacity"] - 0.04;
-                }
-                else
-                {
-                    opacityTimer.Stop();
-                }
-            }
-            else
-            {
-                if ((double)Resources["Opacity"] <= 1)
-                {
-                    Resources["Opacity"] = (double)Resources["Opacity"] + 0.04;
-                }
-                else
-                {
-                    opacityTimer.Stop();
-                }
-            }
-        }
+        //private void ScrollBarOpacityChangeTimerTickEventHandler(object sender, EventArgs e)
+        //{
+
+        //    //Debug.WriteLine(da.To == 300);
+        //    if (animation.To == 300)
+        //    {
+        //        if (scroll.Opacity>= 0)
+        //        {
+        //         scroll.Opacity=scroll.Opacity- 0.04;
+        //        }
+        //        else
+        //        {
+        //            opacityTimer.Stop();
+        //        }
+        //    }
+        //    else
+        //    {
+        //        if (scroll.Opacity <= 1)
+        //        {
+        //            scroll.Opacity = scroll.Opacity+ 0.04;
+        //        }
+        //        else
+        //        {
+        //            opacityTimer.Stop();
+        //        }
+        //    }
+        //}
 
         /// <summary>
         /// 鼠标移出窗口准备缩回
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void WinMainMouseLeaveEventHandler(object sender, MouseEventArgs e)
+        private async void WinMainMouseLeaveEventHandler(object sender, MouseEventArgs e)
         {
-            try
-            {
+            //try
+            //{
+            //    waitTimer.IsEnabled = false;
+            //    waitTimer.Start();
+            //}
+            //catch
+            //{
 
-                waitTimer.IsEnabled = false;
-                waitTimer.Start();
-            }
-            catch
-            {
-
-            }
+            //}
             // Debug.WriteLine("leave");
 
-            cfa.AppSettings.Settings["LeftToScreenRight"].Value = Left.ToString();
-            cfa.AppSettings.Settings["TopToScreenTop"].Value = Top.ToString();
+            await Task.Delay(2000);
+            if (Mouse.GetPosition(this as FrameworkElement).X < 0 && Mouse.GetPosition(this as FrameworkElement).Y < 0)
+            {
+                WindowAnimation(2);
+            }
 
-            cfa.Save();
+            set.Left = Left;
+            set.Top = Top;
+
+            set.Save();
             //Debug.WriteLine("Changed");
         }
 
@@ -520,13 +558,13 @@ namespace 剪纸堆
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void AnimationWatingTimerTickEventHandler(object sender, EventArgs e)
-        {
-            if (Mouse.GetPosition(this as FrameworkElement).X < 0 && Mouse.GetPosition(this as FrameworkElement).Y < 0)
-                WindowAnimation(2);
-            waitTimer.IsEnabled = false;
-            return;
-        }
+        //private void AnimationWatingTimerTickEventHandler(object sender, EventArgs e)
+        //{
+        //    if (Mouse.GetPosition(this as FrameworkElement).X < 0 && Mouse.GetPosition(this as FrameworkElement).Y < 0)
+        //        WindowAnimation(2);
+        //    //waitTimer.IsEnabled = false;
+        //    return;
+        //}
 
         /// <summary>
         /// 右键标题来呼出设置界面
@@ -535,16 +573,42 @@ namespace 剪纸堆
         /// <param name="e"></param>
         private void TxtHeadingPreviewMouseRightButtonUpEventHandler(object sender, MouseButtonEventArgs e)
         {
-            Point p = Mouse.GetPosition(e.Source as FrameworkElement);
-            Window settingPage = new Settings(this)
+            //Point p = Mouse.GetPosition(e.Source as FrameworkElement);
+            //WinSettings settingPage = new WinSettings()
+            //{
+            //    Left = p.X + Left,
+            //    Top = p.Y + Top,
+            //};
+            //Topmost = false;
+            //settingPage.ShowDialog();
+            //Topmost = true;
+
+            MenuItem menuSettings = new MenuItem() { Header = "设置" };
+            menuSettings.Click += (p1, p2) =>
+                {
+                    new WinSettings().ShowDialog();
+                    WindowAnimation(2);
+                };
+            MenuItem menuHide = new MenuItem() { Header = "隐藏" };
+            menuHide.Click += (p1, p2) => Hide();
+            MenuItem menuExit = new MenuItem() { Header = "退出" };
+            menuExit.Click += (p1, p2) => Close();
+
+            ContextMenu menu = new ContextMenu()
             {
-                Left = p.X + this.Left,
-                Top = p.Y + this.Top,
+                PlacementTarget=this,
+                Items =
+                {
+                    menuSettings,
+                    menuHide,
+                    menuExit,
+                },
+                IsOpen = true,
             };
-            this.Topmost = false;
-            settingPage.ShowDialog();
-            this.Topmost = true;
+
         }
+        
+
         #endregion
     }
 }

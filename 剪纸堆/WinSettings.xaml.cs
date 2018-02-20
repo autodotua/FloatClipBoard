@@ -15,34 +15,28 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using static FloatClipboard.SharedStaticData;
 
-namespace 剪纸堆
+namespace FloatClipboard
 {
     /// <summary>
     /// Settings.xaml 的交互逻辑
     /// </summary>
-    public partial class Settings : Window
+    public partial class WinSettings : Window
     {
-        MainWindow winMain;
-
-        public Settings(MainWindow _winMain)
+        public WinSettings()
         {
-            winMain = _winMain;
             InitializeComponent();
-            cfa = winMain.cfa;
-            scbOpacity.Value = Math.Floor(winMain.Opacity * 100);
+            sldOpacity.Value = set.Opacity;
+            sldHeight.Value = set.Height;
             if (System.IO.File.Exists(Environment.GetFolderPath(Environment.SpecialFolder.Startup) + "\\FloatClipBoard.lnk"))
             {
                 cbxStartup.IsChecked = true;
             }
-            if (cfa.AppSettings.Settings["Hide"].Value == "true")
-            {
-                cbxHide.IsChecked = true;
-            }
-            scbMax.Value = int.Parse(cfa.AppSettings.Settings["MaxObject"].Value);
+            cbxHide.IsChecked = !set.Visiable;
+            sldMax.Value = set.MaxObject;
 
         }
-        Configuration cfa;
 
         /// <summary>
         /// 透明度滚动条改变
@@ -51,7 +45,8 @@ namespace 剪纸堆
         /// <param name="e"></param>
         private void ScbOpacityValueChangedEventHandler(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            tbkOpacity.Text = "透明度：" + Math.Floor(scbOpacity.Value).ToString() + "%";
+            tbkOpacity.Text = "透明度：" + Math.Floor(sldOpacity.Value * 100).ToString() + "%";
+           // win.Opacity = sldOpacity.Value;
 
         }
 
@@ -62,7 +57,7 @@ namespace 剪纸堆
         /// <param name="e"></param>
         private void ScbMaxValueChangedEventHandler(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            tbkMax.Text = "最多：" + Math.Floor(scbMax.Value).ToString() + "条";
+            tbkMax.Text = "最多：" + Math.Floor(sldMax.Value).ToString() + "条";
         }
 
         /// <summary>
@@ -72,19 +67,23 @@ namespace 剪纸堆
         /// <param name="e"></param>
         private void BtnOKClickEventHandler(object sender, RoutedEventArgs e)
         {
-            winMain.Opacity = Math.Floor(scbOpacity.Value) / 100;
 
-            cfa.AppSettings.Settings["Opacity"].Value = (Math.Floor(scbOpacity.Value) / 100).ToString();
-            cfa.AppSettings.Settings["MaxObject"].Value = Math.Floor(scbMax.Value).ToString();
-            cfa.AppSettings.Settings["Hide"].Value = cbxHide.IsChecked == true ? "true" : "false";
-            cfa.AppSettings.Settings["Startup"].Value = cbxStartup.IsChecked == true ? "true" : "false";
-
-            cfa.Save();
-            //Close();
-            Application.Current.Shutdown();
-            System.Reflection.Assembly.GetEntryAssembly();
-            string startpath = System.IO.Directory.GetCurrentDirectory();
-            Process.Start(startpath + "/剪纸堆.exe");
+            set.Opacity = sldOpacity.Value;
+            set.Visiable = !cbxHide.IsChecked.Value;
+            set.Height = sldHeight.Value;
+            set.Save();
+            if (set.MaxObject != (int)Math.Floor(sldMax.Value))
+            {
+                set.MaxObject = (int)Math.Floor(sldMax.Value);
+                set.Save();
+                win.LoadHistory();
+            }
+           
+            Close();
+            //Application.Current.Shutdown();
+            //System.Reflection.Assembly.GetEntryAssembly();
+            //string startpath = System.IO.Directory.GetCurrentDirectory();
+            //Process.Start(startpath + "/剪纸堆.exe");
         }
 
         /// <summary>
@@ -141,5 +140,10 @@ namespace 剪纸堆
             }
         }
 
+        private void ScbHeightValueChangedEventHandler(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            tbkHeight.Text = "收缩高度：" + Math.Floor(sldHeight.Value);
+            win.Height=sldHeight.Value;
+        }
     }
 }

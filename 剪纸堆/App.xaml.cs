@@ -2,50 +2,61 @@
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using static FloatClipboard.SharedStaticData;
 
-namespace 剪纸堆
+namespace FloatClipboard
 {
     /// <summary>
     /// App.xaml 的交互逻辑
     /// </summary>
     public partial class App : Application
     {
-        Configuration cfa = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);//配置项
 
         protected override void OnStartup(StartupEventArgs e)
         {
-
-            checkConfig("LeftToScreenRight", "300");
-            checkConfig("TopToScreenTop", "100");
-            checkConfig("Opacity", "0.5");
-            checkConfig("MaxObject", "100");
-            checkConfig("Startup", "false");
-            checkConfig("Hide", "false");
-            Window winMain = new MainWindow()
+            base.OnStartup(e);
+            DispatcherUnhandledException += AppDispatcherUnhandledExceptionEventHandler;
+            set = new Properties.Settings();
+            win = new MainWindow()
             {
-                Left = int.Parse(cfa.AppSettings.Settings["LeftToScreenRight"].Value),// SystemParameters.WorkArea.Width - 300,
-                Top = int.Parse(cfa.AppSettings.Settings["TopToScreenTop"].Value),
-                Opacity = double.Parse(cfa.AppSettings.Settings["Opacity"].Value),
-                Visibility = cfa.AppSettings.Settings["Hide"].Value == "true" ? Visibility.Hidden : Visibility.Visible
-
+                Left = set.Left,
+                Top = set.Top,
+                Opacity = set.Opacity,
+                Visibility = set.Visiable ? Visibility.Visible : Visibility.Collapsed,
             };
 
-
-
-
-            winMain.Show();
+            win.Show();
         }
 
-        private void checkConfig(string key, string defaultValue)
+        private static void AppDispatcherUnhandledExceptionEventHandler(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
-            if (cfa.AppSettings.Settings[key] == null)
+            MessageBox.Show(e.ToString(), "发生异常", MessageBoxButton.OK, MessageBoxImage.Error);
+
+            string logName = "UnhandledException.log";
+            if (File.Exists(logName))
             {
-                cfa.AppSettings.Settings.Add(key, defaultValue);
-                cfa.Save();
+                string oldFile = File.ReadAllText(logName);
+                File.WriteAllText(logName,
+                oldFile
+                + Environment.NewLine + Environment.NewLine
+                + DateTime.Now.ToString()
+                + Environment.NewLine
+                + e.Exception.ToString());
             }
+            else
+            {
+                File.WriteAllText(logName,
+                  DateTime.Now.ToString()
+                  + Environment.NewLine
+                   + e.Exception.ToString());
+            }
+            Current.Shutdown();
+            return;
         }
+
     }
 }
