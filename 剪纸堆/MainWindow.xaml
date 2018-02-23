@@ -220,7 +220,7 @@
                 <RowDefinition Height="24"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <Grid MouseLeftButtonDown="HeadingGridMouseLeftButtonDownEventHandler" VerticalAlignment="Top" Margin="0,0,8,0">
+            <Grid MouseLeftButtonDown="HeadingGridMouseLeftButtonDownEventHandler" VerticalAlignment="Top" Margin="0,0,8,0" x:Name="grdFirst">
                 <Border CornerRadius="3"  HorizontalAlignment="Center" VerticalAlignment="Center" BorderBrush="{DynamicResource headerColor}" BorderThickness="4">
                     <Border.Effect>
                         <DropShadowEffect RenderingBias="Quality" Color="#CC555500" Opacity="0.5"/>

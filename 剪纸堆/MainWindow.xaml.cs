@@ -470,7 +470,7 @@ namespace FloatClipboard
         }
 
         /// <summary>
-        /// 窗口动画的实行部分
+        /// 窗口动画的实行部分；1：展开；2：收拢
         /// </summary>
         /// <param name="type"></param>
         private void WindowAnimation(int type)
@@ -485,6 +485,10 @@ namespace FloatClipboard
             else
             {
                 aniHeight.To = type == 1 ? stk.ActualHeight + 64 : set.Height;
+            }
+            if(type==2)
+            {
+                sv.ScrollToHome();
             }
             storyBoard.Begin(this);
         }
