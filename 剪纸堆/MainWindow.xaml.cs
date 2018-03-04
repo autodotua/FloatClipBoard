@@ -74,7 +74,10 @@ namespace FloatClipboard
         public MainWindow()
         {
             InitializeComponent();
-
+            if(set.Visiable==false)
+            {
+                Visibility = Visibility.Hidden;
+            }
         }
 
         #region 剪贴板监控
