@@ -80,7 +80,7 @@
 
 
 
-        <Style TargetType="Button" x:Key="buttonStyle">
+        <!--<Style TargetType="Button" x:Key="buttonStyle">
             <Setter Property="Background" Value="{DynamicResource universalBrush}"/>
             <Setter Property="FontSize" Value="14"/>
 
@@ -116,7 +116,7 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
-        </Style>
+        </Style>-->
 
 
 
@@ -175,17 +175,35 @@
         </Style>
 
 
-
         <Style TargetType="Button" x:Key="tempButtonStyle">
             <Setter Property="Background" Value="{DynamicResource universalBrush}"/>
             <Setter Property="FontSize" Value="14"/>
-
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type ButtonBase}">
-                        <Border x:Name="border" BorderThickness="0" CornerRadius="3" BorderBrush="{DynamicResource universalBrush}" Background="{DynamicResource universalBrush}" SnapsToDevicePixels="True" >
+                        <Border x:Name="border" Padding="3" BorderThickness="0" CornerRadius="3" BorderBrush="{DynamicResource universalBrush}" Background="{DynamicResource universalBrush}" SnapsToDevicePixels="True" RenderTransformOrigin="0.5,0.5" >
+                            <!--<Border.RenderTransform>
+                                <TransformGroup>
+                                    <ScaleTransform/>
+                                </TransformGroup>
+                            </Border.RenderTransform>-->
                             <ContentPresenter x:Name="contentPresenter" ContentTemplate="{TemplateBinding ContentTemplate}" Content="{TemplateBinding Content}" ContentStringFormat="{TemplateBinding ContentStringFormat}" Focusable="False" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="5,3" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                         </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" TargetName="border" Value="#FFD5D5FF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" TargetName="border" Value="#FFE4E4FF"/>
+                            </Trigger>
+                            <!--<Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="RenderTransform" TargetName="border">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.8" ScaleY="0.8"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>-->
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>

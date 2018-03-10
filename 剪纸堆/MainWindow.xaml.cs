@@ -74,7 +74,7 @@ namespace FloatClipboard
         public MainWindow()
         {
             InitializeComponent();
-            if(set.Visiable==false)
+            if (set.Visiable == false)
             {
                 Visibility = Visibility.Hidden;
             }
@@ -246,44 +246,73 @@ namespace FloatClipboard
         /// <param name="strValue"></param>
         private void AddNewButton(string strValue)
         {
-            Button tempButton = new Button()
+            try
             {
-                HorizontalAlignment = HorizontalAlignment.Center,
-                MaxHeight = 100,
-                MaxWidth = 180
-            };
-            Border tempBorder = new Border();
-            tempButton.Content = strValue;
-            tempButton.Style = Resources["tempButtonStyle"] as Style;
-            tempBorder = new Border()
-            {
-                BorderThickness = new Thickness(5, 5, 5, 5),
-                CornerRadius = new CornerRadius(3, 3, 3, 3),
-                BorderBrush = new SolidColorBrush(Color.FromRgb(204, 204, 255)),
-                HorizontalAlignment = HorizontalAlignment.Center,
-                MaxHeight = 100,
-                MaxWidth = 180,
-                Effect = new System.Windows.Media.Effects.DropShadowEffect()
+                Button insideButton = new Button()
                 {
-                    Color = Color.FromRgb(80, 80, 100),
-                    Opacity = 0.5,
-                },
-                Child = System.Windows.Markup.XamlReader.Parse(System.Windows.Markup.XamlWriter.Save(tempButton)) as Button
-            };
+                    //HorizontalAlignment = HorizontalAlignment.Center,
+                    MaxHeight = 100,
+                    Width = 160,
+                    Style = Resources["tempButtonStyle"] as Style,
+                    Content = strValue
+                };
+                insideButton.Click += BtnTextClickEventHandler;
+                insideButton.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                insideButton.Arrange(new Rect(0, 0, insideButton.DesiredSize.Width, insideButton.DesiredSize.Height));
+                string btnName = "btn" + insideButton.GetHashCode();
+                RegisterName(btnName, insideButton);
+                Border tempBorder = new Border()
+                {
+                    BorderThickness = new Thickness(5, 5, 5, 5),
+                    CornerRadius = new CornerRadius(3, 3, 3, 3),
+                   // BorderBrush = new SolidColorBrush(Color.FromRgb(204, 204, 255)),
+                    //Background= new SolidColorBrush(Color.FromRgb(204, 204, 255)),
+                    // HorizontalAlignment = HorizontalAlignment.st,
+                    //MaxHeight = 100,
+                    //MaxWidth = 180,
+                    Width = insideButton.ActualWidth,
+                    Height = insideButton.ActualHeight,
+                    Effect = new System.Windows.Media.Effects.DropShadowEffect()
+                    {
+                        Color = Color.FromRgb(80, 80, 100),
+                        Opacity = 0.5,
+                    },
+                    //Child=insideButton,
+                    //Child = new Button()
+                    //{
+                    //    HorizontalAlignment = HorizontalAlignment.Center,
+                    //    MaxHeight = 100,
+                    //    MaxWidth = 180,
+                    //    Style = Resources["tempButtonStyle"] as Style,
+                    //    Content = strValue
+                    //},//System.Windows.Markup.XamlReader.Parse(System.Windows.Markup.XamlWriter.Save(insideButton)) as Button
+                };
+                Binding binding = new Binding()
+                {
+                    Source=insideButton,
+                   // ElementName = btnName,
+                    Mode = BindingMode.OneWay,
+                    Path = new PropertyPath("Background"),
+                };
+                tempBorder.SetBinding(Border.BorderBrushProperty, binding);
+                //Grid tempGrid = new Grid();
+                //tempGrid.Children.Add(tempBorder);
+                //tempGrid.Children.Add(insideButton);
 
-            tempButton.Style = Resources["buttonStyle"] as Style;
+                stk.Children.Insert(0, new TextBlock());
+                stk.Children.Insert(0, new Grid() { Children = { tempBorder, insideButton } });
+            }
+            catch
+            {
 
-            tempButton.Click += BtnTextClickEventHandler;
+            }
+
+            //insideButton.Style = Resources["buttonStyle"] as Style;
+
 
 
             // Child = temp
 
-            Grid tempGrid = new Grid();
-            tempGrid.Children.Add(tempBorder);
-            tempGrid.Children.Add(tempButton);
-
-            stk.Children.Insert(0, new TextBlock());
-            stk.Children.Insert(0, tempGrid);
 
             //spnl.Children.Add(tempGrid);
             //spnl.Children.Add(new TextBlock());
@@ -309,7 +338,7 @@ namespace FloatClipboard
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private  void WinMainLoadedEventHandler(object sender, RoutedEventArgs e)
+        private void WinMainLoadedEventHandler(object sender, RoutedEventArgs e)
         {
             scroll = FindVisualChildHelper.FindVisualChild<ScrollBar>(sv);
 
@@ -328,9 +357,10 @@ namespace FloatClipboard
             {
                 xml.Load("OldClipBoard.xml");
                 root = xml.CreateElement("剪纸堆");
+                LoadHistory();
             }
 
-            LoadHistory();
+
             //foreach (XmlElement i in root)
             //{
             //    addNewButton(i.GetAttribute("Value"));
@@ -341,7 +371,7 @@ namespace FloatClipboard
 
             InitCBViewer();
 
-             WinMainMouseLeaveEventHandler(null, null);
+            WinMainMouseLeaveEventHandler(null, null);
 
         }
 
@@ -416,7 +446,14 @@ namespace FloatClipboard
         /// <param name="e"></param>
         private void HeadingGridMouseLeftButtonDownEventHandler(object sender, MouseButtonEventArgs e)
         {
-            DragMove();
+            try
+            {
+                DragMove();
+            }
+            catch
+            {
+
+            }
         }
 
         /// <summary>
@@ -489,7 +526,7 @@ namespace FloatClipboard
             {
                 aniHeight.To = type == 1 ? stk.ActualHeight + 64 : set.Height;
             }
-            if(type==2)
+            if (type == 2)
             {
                 sv.ScrollToHome();
             }
@@ -603,7 +640,7 @@ namespace FloatClipboard
 
             ContextMenu menu = new ContextMenu()
             {
-                PlacementTarget=this,
+                PlacementTarget = this,
                 Items =
                 {
                     menuSettings,
@@ -614,7 +651,7 @@ namespace FloatClipboard
             };
 
         }
-        
+
 
         #endregion
     }
